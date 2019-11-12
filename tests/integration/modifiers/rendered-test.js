@@ -4,7 +4,8 @@ import { render, visit } from '@ember/test-helpers';
 import { hbs } from 'ember-cli-htmlbars';
 
 import Router from 'dummy/router';
-import { helper } from '@ember/component/helper';
+import Helper from '@ember/component/helper';
+import { inject as service } from '@ember/service';
 
 module('tests/integration/modifiers/rendered', function() {
   module('rendering tests', function(hooks) {
@@ -35,17 +36,34 @@ module('tests/integration/modifiers/rendered', function() {
       });
 
       this.owner.register('router:main', TestRouter);
-      this.owner.register('helper:assert-step', helper(function([name]) {
-        return () => assert.step(name);
-      }));
+      this.owner.register('helper:assert-step', class extends Helper {
+        @service router;
+
+        compute([name]) {
+
+          return () => assert.step(`${name} - ${this.router.currentURL}`);
+        }
+      });
 
       this.owner.register('template:profiles', hbs`
-        <div {{rendered (assert-step 'profiles rendered')}}></div>
+        <div {{rendered
+               (assert-step 'profiles')
+               routeName=(get (-get-dynamic-var 'outletState') 'render.name')
+               currentRouteModel=(get (-get-dynamic-var 'outletState') 'render.model')
+             }}>
+        </div>
+
         {{outlet}}
       `);
 
       this.owner.register('template:profiles/profile', hbs`
-        <div {{rendered (assert-step 'profiles.profile rendered')}}></div>
+        <div {{rendered
+               (assert-step 'profiles.profile')
+               routeName=(get (-get-dynamic-var 'outletState') 'render.name')
+               currentRouteModel=(get (-get-dynamic-var 'outletState') 'render.model')
+             }}>
+        </div>
+
         {{outlet}}
       `);
     });
@@ -53,7 +71,22 @@ module('tests/integration/modifiers/rendered', function() {
     test('invokes function upon initial render', async function(assert) {
       await visit('/profiles');
 
-      assert.verifySteps(['profiles rendered']);
+      assert.verifySteps(['profiles - /profiles']);
+    });
+
+    test('re-invokes function upon route transition', async function(assert) {
+      await visit('/profiles/1');
+
+      assert.verifySteps([
+        'profiles - /profiles/1',
+        'profiles.profile - /profiles/1'
+      ]);
+
+      await visit('/profiles/2');
+
+      assert.verifySteps([
+        'profiles.profile - /profiles/2'
+      ]);
     });
   });
 });
