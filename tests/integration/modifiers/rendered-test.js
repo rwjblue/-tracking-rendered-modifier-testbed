@@ -46,23 +46,13 @@ module('tests/integration/modifiers/rendered', function() {
       });
 
       this.owner.register('template:profiles', hbs`
-        <div {{rendered
-               (assert-step 'profiles')
-               routeName=(get (-get-dynamic-var 'outletState') 'render.name')
-               currentRouteModel=(get (-get-dynamic-var 'outletState') 'render.model')
-             }}>
-        </div>
+        <div {{rendered (assert-step 'profiles') }}></div>
 
         {{outlet}}
       `);
 
       this.owner.register('template:profiles/profile', hbs`
-        <div {{rendered
-               (assert-step 'profiles.profile')
-               routeName=(get (-get-dynamic-var 'outletState') 'render.name')
-               currentRouteModel=(get (-get-dynamic-var 'outletState') 'render.model')
-             }}>
-        </div>
+        <div {{rendered (assert-step 'profiles.profile') }}></div>
 
         {{outlet}}
       `);
